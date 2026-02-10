@@ -8,7 +8,10 @@ export async function GET(
 ) {
   const { slug } = await params;
   const path = slug.join('/');
-  const apiUrl = `http://api:8080/${path}`;
+  
+  // Forward query parameters from the original request
+  const searchParams = request.nextUrl.searchParams.toString();
+  const apiUrl = `http://api:8080/${path}${searchParams ? `?${searchParams}` : ''}`;
   
   try {
     const response = await fetch(apiUrl, {
@@ -18,8 +21,19 @@ export async function GET(
       },
     });
     
-    const data = await response.json();
-    return NextResponse.json(data, { status: response.status });
+    // Check content type to determine how to parse the response
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      const data = await response.json();
+      return NextResponse.json(data, { status: response.status });
+    } else {
+      // Handle plain text responses
+      const text = await response.text();
+      return NextResponse.json(
+        { error: text },
+        { status: response.status }
+      );
+    }
   } catch (error) {
     console.error('Proxy error:', error);
     return NextResponse.json(
@@ -47,8 +61,19 @@ export async function POST(
       body: JSON.stringify(body),
     });
     
-    const data = await response.json();
-    return NextResponse.json(data, { status: response.status });
+    // Check content type to determine how to parse the response
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      const data = await response.json();
+      return NextResponse.json(data, { status: response.status });
+    } else {
+      // Handle plain text responses
+      const text = await response.text();
+      return NextResponse.json(
+        { error: text },
+        { status: response.status }
+      );
+    }
   } catch (error) {
     console.error('Proxy error:', error);
     return NextResponse.json(
