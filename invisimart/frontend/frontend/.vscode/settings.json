@@ -1,0 +1,38 @@
+{
+  // ESLint configuration
+  "eslint.enable": true,
+  "eslint.run": "onSave",
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+  
+  // Auto-fix ESLint issues on save
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  
+  // Show ESLint errors and warnings in the editor
+  "eslint.alwaysShowStatus": true,
+  
+  // TypeScript configuration
+  "typescript.preferences.includePackageJsonAutoImports": "auto",
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  
+  // Editor configuration for React/Next.js
+  "emmet.includeLanguages": {
+    "typescript": "html",
+    "typescriptreact": "html"
+  },
+  
+  // Format on save
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  
+  // Show inline hints
+  "typescript.inlayHints.parameterNames.enabled": "all",
+  "typescript.inlayHints.parameterTypes.enabled": true,
+  "typescript.inlayHints.variableTypes.enabled": true
+}

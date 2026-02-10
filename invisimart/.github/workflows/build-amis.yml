@@ -1,0 +1,94 @@
+# name: Build AMI Images
+
+# on:
+#   workflow_run:
+#     workflows: ["Build Container Images"]
+#     types:
+#       - completed
+#     branches:
+#       - main
+#   push:
+#     tags:
+#       - 'v*'
+#   workflow_dispatch:
+
+# env:
+#   AWS_REGION: ${{ vars.AWS_REGION }}
+#   ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
+
+# permissions:
+#   id-token: write   # Required for OIDC
+#   contents: read
+
+# jobs:
+#   build-amis:
+#     runs-on: ubuntu-latest
+#     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+#     strategy:
+#       matrix:
+#         ami:
+#           - name: api-service
+#             template: api-service.pkr.hcl
+#             service: api
+#           - name: inventory-service
+#             template: inventory-service.pkr.hcl
+#             service: inventory
+#           - name: frontend-service
+#             template: frontend-service.pkr.hcl
+#             service: frontend
+#           - name: all-in-one
+#             template: all-in-one.pkr.hcl
+#             service: all
+
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+
+#       - name: Configure AWS credentials
+#         uses: aws-actions/configure-aws-credentials@v4
+#         with:
+#           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+#           aws-region: ${{ env.AWS_REGION }}
+
+#       - name: Setup Packer
+#         uses: hashicorp/setup-packer@main
+#         with:
+#           version: "latest"
+
+#       - name: Set build variables
+#         id: vars
+#         run: |
+#           # Extract version from tag or use commit SHA
+#           if [[ $GITHUB_REF == refs/tags/* ]]; then
+#             VERSION=${GITHUB_REF#refs/tags/}
+#           else
+#             VERSION=${GITHUB_SHA:0:8}
+#           fi
+#           echo "version=$VERSION" >> $GITHUB_OUTPUT
+#           echo "timestamp=$(date +%Y%m%d-%H%M%S)" >> $GITHUB_OUTPUT
+
+#       - name: Validate Packer template
+#         run: |
+#           cd packer
+#           packer validate \
+#             -var "version=${{ steps.vars.outputs.version }}" \
+#             -var "timestamp=${{ steps.vars.outputs.timestamp }}" \
+#             -var "ecr_registry=${{ env.ECR_REGISTRY }}" \
+#             -var "aws_region=${{ env.AWS_REGION }}" \
+#             templates/${{ matrix.ami.template }}
+
+#       - name: Build AMI
+#         run: |
+#           cd packer
+#           packer build \
+#             -var "version=${{ steps.vars.outputs.version }}" \
+#             -var "timestamp=${{ steps.vars.outputs.timestamp }}" \
+#             -var "ecr_registry=${{ env.ECR_REGISTRY }}" \
+#             -var "aws_region=${{ env.AWS_REGION }}" \
+#             templates/${{ matrix.ami.template }}
+
+#       - name: Output AMI details
+#         run: |
+#           echo "AMI built for: ${{ matrix.ami.name }}"
+#           echo "Version: ${{ steps.vars.outputs.version }}"
+#           echo "Timestamp: ${{ steps.vars.outputs.timestamp }}"

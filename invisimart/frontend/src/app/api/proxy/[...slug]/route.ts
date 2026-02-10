@@ -1,0 +1,59 @@
+import { NextRequest, NextResponse } from 'next/server';
+
+// This API route proxies requests to the backend API
+// Allows the browser to access the backend without needing direct port 8080 access
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ slug: string[] }> }
+) {
+  const { slug } = await params;
+  const path = slug.join('/');
+  const apiUrl = `http://api:8080/${path}`;
+  
+  try {
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    const data = await response.json();
+    return NextResponse.json(data, { status: response.status });
+  } catch (error) {
+    console.error('Proxy error:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch from API' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ slug: string[] }> }
+) {
+  const { slug } = await params;
+  const path = slug.join('/');
+  const apiUrl = `http://api:8080/${path}`;
+  const body = await request.json();
+  
+  try {
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+    
+    const data = await response.json();
+    return NextResponse.json(data, { status: response.status });
+  } catch (error) {
+    console.error('Proxy error:', error);
+    return NextResponse.json(
+      { error: 'Failed to post to API' },
+      { status: 500 }
+    );
+  }
+}

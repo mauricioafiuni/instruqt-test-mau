@@ -1,0 +1,30 @@
+{
+  "recommendations": [
+    // Essential for ESLint integration
+    "dbaeumer.vscode-eslint",
+    
+    // Code formatting
+    "esbenp.prettier-vscode",
+    
+    // TypeScript support
+    "ms-vscode.vscode-typescript-next",
+    
+    // React/JSX support
+    "ms-vscode.vscode-json",
+    
+    // Tailwind CSS IntelliSense
+    "bradlc.vscode-tailwindcss",
+    
+    // Auto Rename Tag
+    "formulahendry.auto-rename-tag",
+    
+    // Better syntax highlighting
+    "ms-vscode.vscode-typescript-next",
+    
+    // Import organization
+    "ms-vscode.typescript-importer",
+    
+    // Error highlighting
+    "usernamehw.errorlens"
+  ]
+}

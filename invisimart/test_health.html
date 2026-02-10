@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head><title>Health Test</title></head>
+<body>
+<h1>Health Check Test</h1>
+<div id="output"></div>
+<script>
+async function test() {
+  const output = document.getElementById('output');
+  output.innerHTML = 'Testing...<br>';
+  
+  try {
+    // Test config endpoint
+    const configRes = await fetch('/api/config');
+    const config = await configRes.json();
+    output.innerHTML += `Config: ${JSON.stringify(config)}<br><br>`;
+    
+    const apiUrl = config.apiUrl;
+    output.innerHTML += `Using API URL: ${apiUrl}<br><br>`;
+    
+    // Test health
+    const healthRes = await fetch(`${apiUrl}/health`);
+    const health = await healthRes.json();
+    output.innerHTML += `Health: ${JSON.stringify(health)}<br><br>`;
+    
+    // Test products
+    const productsRes = await fetch(`${apiUrl}/products`);
+    const products = await productsRes.json();
+    output.innerHTML += `Products count: ${products.length}<br>`;
+    
+  } catch (error) {
+    output.innerHTML += `ERROR: ${error.message}<br>Stack: ${error.stack}`;
+  }
+}
+test();
+</script>
+</body>
+</html>

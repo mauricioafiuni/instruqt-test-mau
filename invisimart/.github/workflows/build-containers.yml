@@ -1,0 +1,119 @@
+name: Build Container Images
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-dev:
+    runs-on: ubuntu-latest
+    name: "Build ${{ matrix.service }} Container (dev)"
+
+    strategy:
+      matrix:
+        service: [frontend, api, inventory, maintenance, database]
+
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+
+      - name: Configure AWS credentials (dev)
+        uses: hashicorp/doormat-action@v1
+        with:
+          aws-role-arn: ${{ vars.AWS_ROLE_ARN_DEV }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Login to Amazon ECR (dev)
+        id: login-ecr-dev
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Extract metadata for ${{ matrix.service }} (dev)
+        id: meta-dev
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ vars.ECR_REGISTRY_DEV }}/invisimart/${{ matrix.service }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push ${{ matrix.service }} Docker image (dev)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./${{ matrix.service }}
+          push: true
+          tags: ${{ steps.meta-dev.outputs.tags }}
+          labels: ${{ steps.meta-dev.outputs.labels }}
+        env:
+          ENVIRONMENT: dev
+
+  build-prod:
+    runs-on: ubuntu-latest
+    name: "Build ${{ matrix.service }} Container (prod)"
+    # Only run for main branch and tags
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+
+    strategy:
+      matrix:
+        service: [frontend, api, inventory, maintenance, database]
+
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+
+      - name: Configure AWS credentials (prod)
+        uses: hashicorp/doormat-action@v1
+        with:
+          aws-role-arn: ${{ vars.AWS_ROLE_ARN_PROD }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Login to Amazon ECR (prod)
+        id: login-ecr-prod
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Extract metadata for ${{ matrix.service }} (prod)
+        id: meta-prod
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ vars.ECR_REGISTRY_PROD }}/invisimart/${{ matrix.service }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push ${{ matrix.service }} Docker image (prod)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./${{ matrix.service }}
+          push: true
+          tags: ${{ steps.meta-prod.outputs.tags }}
+          labels: ${{ steps.meta-prod.outputs.labels }}
+        env:
+          ENVIRONMENT: prod

@@ -1,0 +1,81 @@
+# Docker Compose configuration for Invisimart application
+services:
+  db:
+    build:
+      context: ./database
+    restart: always
+    environment:
+      POSTGRES_USER: invisimart
+      POSTGRES_PASSWORD: invisimartpass
+      POSTGRES_DB: invisimartdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U invisimart -d invisimartdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  api:
+    build:
+      context: ./api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: invisimart
+      DB_PASSWORD: invisimartpass
+      DB_NAME: invisimartdb
+      DEBUG: "true"
+      VAULT_ADDR: "${VAULT_ADDR:-}"
+      VAULT_TOKEN: "${VAULT_TOKEN:-}"
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  inventory:
+    build:
+      context: ./inventory
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: invisimart
+      DB_PASSWORD: invisimartpass
+      DB_NAME: invisimartdb
+      PURCHASE_INTERVAL: 2s
+      RESTOCK_INTERVAL: 10s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        API_URL: http://localhost:8080
+    depends_on:
+      - api
+    environment:
+      API_URL: http://localhost:8080 # These are client-side calls
+    ports:
+      - "8000:3000"
+    restart: unless-stopped
+
+  # Maintenance page server for development testing
+  maintenance:
+    image: nginx:alpine
+    ports:
+      - "8001:80"
+    volumes:
+      - ./maintenance/index.html:/usr/share/nginx/html/index.html:ro
+    profiles:
+      - maintenance
+
+volumes:
+  db_data:
